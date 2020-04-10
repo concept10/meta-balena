@@ -18,19 +18,21 @@ run_current_hooks_and_recover () {
 
 local_image=""
 remote_image=""
+tmp_dir_symlink=""
 reboot=0
 hooks=1
 hooks_rollback=1
 
-while getopts 'f:i:rnx' flag; do
+while getopts 'f:i:rntx' flag; do
 	case "${flag}" in
 	f) local_image=$(realpath "${OPTARG}") ;;
 	i) remote_image="${OPTARG}" ;;
 	r) reboot=1 ;;
 	n) hooks=0 ;;
+        t) tmp_dir_symlink="${OPTARG}" ;;
 	x) hooks_rollback=0 ;;
 	*) error "Unexpected option ${flag}" ;;
-	esac
+    esac
 done
 
 if [ "$local_image" =  "" ] && [ "$remote_image" = "" ]; then
@@ -56,6 +58,13 @@ mkdir -p /mnt/sysroot
 for dir in 'dev' 'etc' 'balena' 'hostapps' 'mnt/state' 'proc' 'sbin' 'sys' 'tmp'; do
 	mkdir -p "$SYSROOT/$dir"
 done
+if [ -d "$tmp_dir_symlink" ]; then
+	rm -fr "$SYSROOT/balena/tmp"
+	ln -s "$tmp_dir_symlink" "$SYSROOT/balena/tmp"
+elif [ -L "$SYSROOT/balena/tmp" ]; then
+	rm "$SYSROOT/balena/tmp"
+	mkdir "$SYSROOT/balena/tmp"
+fi
 if [ ! -f "$SYSROOT/etc/machine-id" ]; then
 	touch "$SYSROOT/etc/machine-id"
 fi
